@@ -1,26 +1,40 @@
 import win32com.client as win32
 import csv
+import sys
+
+
+def get_outlook():
+    try:
+        outlook = win32.Dispatch("outlook.application")
+        return outlook
+    except:
+        print("Error: Outlook is not open.")
+        sys.exit(1)
 
 
 def get_data(file):  # TODO
     # obtain data from our file
+    data = []  # placeholder DEBUG
     with open(file) as f:
         csv_reader = csv.reader(f, delimiter=",")
         for row in csv_reader:
-
             process_row(row)
-    pass
+
+    return data  # placeholder DEBUG
 
 
 def process_row(row):
-    # ['Date Dispensed', 'Patient Name', 'Street', 'Town or City', 'Birth Date', 'PPSN No', 'Gender', 'Qty', 'Script Dispensed As', 'Directions Expanded', 'Contract GP Name', 'Contract GP Address']
+    """ 
+    ['Date Dispensed', 'Patient Name', 'Street', 'Town or City', 'Birth Date',
+    'PPSN No', 'Gender', 'Qty', 'Script Dispensed As', 'Directions Expanded',
+    'Contract GP Name', 'Contract GP Address']
+    """
     pass
 
 
 def create_email(account, address, subject, body):
     # creates an email
-    outlook = win32.Dispatch("outlook.application")
-
+    outlook = get_outlook()
     mail = outlook.CreateItem(0)
     mail.To = address
     mail.Subject = subject
@@ -46,8 +60,7 @@ def format_body(name, patients):
 
 def select_account(search):
     # select the account to send the email from
-    outlook = win32.Dispatch("outlook.application")
-
+    outlook = get_outlook()
     accounts = outlook.Session.Accounts
     for account in accounts:
         if search in str(account):
@@ -78,7 +91,7 @@ def create_emails(account, recipient_list):
 
 def main():
     # find the file with data
-    get_data("Flu Vacc Report.csv")
+    data = get_data("Flu Vacc Report.csv")
     # parse the data, creating list?
 
     # select correct account
