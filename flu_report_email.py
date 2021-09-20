@@ -10,7 +10,16 @@ class Recipient:
         self.address = address
         self.email = email
         self.patients = [
-            "Date; Patient Name; Patient Address; Date of Birth; PPSN; Gender; Vaccine Administered; Batch No. & Expiry"
+            [
+                "Date",
+                "Patient Name",
+                "Patient Address",
+                "Date of Birth",
+                "PPSN",
+                "Gender",
+                "Vaccine Administered",
+                "Batch No. & Expiry",
+            ]
         ]
         self.patients.append(patient_entry)
         self.surname = name.split()[-1]
@@ -55,7 +64,7 @@ class PatientEntry:
             self.item,
             self.item_details,
         ]
-        return "; ".join(summary_list)
+        return summary_list
 
 
 def get_outlook():
@@ -152,7 +161,7 @@ def create_email(account: object, mail_details: list) -> object:
     mail = outlook.CreateItem(0)
     mail.To = mail_details[0]
     mail.Subject = mail_details[1]
-    mail.Body = mail_details[2]
+    mail.HTMLBody = mail_details[2]
     # set the "send from" account using arcane methods
     mail._oleobj_.Invoke(*(64209, 0, 8, 0, account))
     # save a draft
@@ -229,10 +238,10 @@ def compose_email_details(
         recipient = recipient_dict[key]
         name = recipient.name
         surname = recipient.surname
-        patients = recipient.generate_patient_summary()
+        patients = recipient.patients
         address = recipient.address
         email = recipient.email
-        print("Composing email for {}".format(name))
+        print("Composing email for {} ({} patients)".format(name, len(patients)))
         body = format_body(surname, patients)
         subject = "Vaccine Report - {}".format(name)
         email_list.append([email, subject, body])
@@ -265,10 +274,21 @@ def format_body(
     with open("email_template.html", "r") as f:
         html_template = f.read()
     with open("test_email.html", "w") as f:  # TODO: remove debug file creation
-        new_html = html_template.format(name, patient_details)
+        new_html = html_template.format(name, html_table(patients))
         f.write(new_html)
 
     return body_string
+
+
+def html_table(data: list) -> str:
+    table = "<table>"
+    for row in data:
+        cells = "</td><td>".join(row)
+
+        table += "<tr><td>{}</td></tr>\n".format(cells)
+
+    table += "</table>"
+    return table
 
 
 def email_list_iterate(account: object, email_list: list):
