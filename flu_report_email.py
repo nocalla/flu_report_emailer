@@ -13,6 +13,7 @@ class Recipient:
             "Date; Patient Name; Patient Address; Date of Birth; PPSN; Gender; Vaccine Administered; Batch No. & Expiry"
         ]
         self.patients.append(patient_entry)
+        self.surname = name.split()[-1]
 
     def add_patient_entry(self, patient_entry):
         self.patients.append(patient_entry)
@@ -161,29 +162,6 @@ def create_email(account: object, mail_details: list) -> object:
     return mail
 
 
-def format_body(
-    name: str, patients: list
-) -> str:  # TODO: version to allow for formatting? maybe use a template that we can change out values in
-
-    """composes the message text
-
-    Args:
-        name (str): recipient name
-        patients (list): list of individual entries to tabulate
-
-    Returns:
-        str: text of email body to send
-    """
-
-    greeting = "Dear {},\n".format(name)
-    general_body = "For your information, the below patients of yours were recently vaccinated in our pharmacy.\nVaccine details, including batch and expiry, are listed below.\n"
-    patient_details = "{}".format(patients)
-    sign_off = "\nKind regards,\n"
-    body_string = greeting + general_body + patient_details + sign_off
-
-    return body_string
-
-
 def select_account(search: str) -> object:
     """select the account to send the email from
 
@@ -250,17 +228,47 @@ def compose_email_details(
     for key in recipient_dict:
         recipient = recipient_dict[key]
         name = recipient.name
+        surname = recipient.surname
         patients = recipient.generate_patient_summary()
         address = recipient.address
         email = recipient.email
         print("Composing email for {}".format(name))
-        body = format_body(name, patients)
+        body = format_body(surname, patients)
         subject = "Vaccine Report - {}".format(name)
         email_list.append([email, subject, body])
         print(
             "To: {}\nSubject: {}\n{}".format(email, subject, body)
         )  # DEBUG - display email details in terminal
     return email_list
+
+
+def format_body(
+    name: str, patients: list
+) -> str:  # TODO: version to allow for formatting? maybe use a template that we can change out values in
+
+    """composes the message text
+
+    Args:
+        name (str): recipient name
+        patients (list): list of individual entries to tabulate
+
+    Returns:
+        str: text of email body to send
+    """
+
+    greeting = "Dear {},\n".format(name)
+    general_body = "For your information, the below patients of yours were recently vaccinated in our pharmacy.\nVaccine details, including batch and expiry, are listed below.\n"
+    patient_details = "{}".format(patients)
+    sign_off = "\nKind regards,\n"
+    body_string = greeting + general_body + patient_details + sign_off
+
+    with open("email_template.html", "r") as f:
+        html_template = f.read()
+    with open("test_email.html", "w") as f:  # TODO: remove debug file creation
+        new_html = html_template.format(name, patient_details)
+        f.write(new_html)
+
+    return body_string
 
 
 def email_list_iterate(account: object, email_list: list):
