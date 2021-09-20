@@ -5,3 +5,5 @@ Healthmail Addresses.csv
 email_template.html
 test_email.html
 __pycache__/
+.gitignore
+.gitattributes
