@@ -1,80 +1,12 @@
 import csv
-import sys
-
-import win32com.client as win32
-
-
-class Recipient:
-    def __init__(self, name, address, email, patient_entry):
-        self.name = name
-        self.address = address
-        self.email = email
-        self.patients = [
-            [
-                "Date",
-                "Patient Name",
-                "Patient Address",
-                "Date of Birth",
-                "PPSN",
-                "Gender",
-                "Vaccine Administered",
-                "Batch No. & Expiry",
-            ]
-        ]
-        self.patients.append(patient_entry)
-        self.surname = name.split()[-1]
-
-    def add_patient_entry(self, patient_entry):
-        self.patients.append(patient_entry)
-
-    def generate_patient_summary(self):
-        return "\n".join(self.patients)
+from PatientEntry import PatientEntry
+from Recipient import Recipient
+from EmailHandler import EmailHandler
 
 
-class PatientEntry:
-    def __init__(self, heading_indices, data_row):
-        self.date = data_row[heading_indices["Date Dispensed"]]
-        self.name = data_row[heading_indices["Patient Name"]]
-        self.address = "{}, {}".format(
-            data_row[heading_indices["Street"]],
-            data_row[heading_indices["Town or City"]],
-        )
-        self.dob = data_row[heading_indices["Birth Date"]]
-        self.ppsn = data_row[heading_indices["PPSN No"]]
-        self.gender = data_row[heading_indices["Gender"]]
-        self.item = data_row[heading_indices["Script Dispensed As"]]
-        self.item_details = data_row[heading_indices["Directions Expanded"]]
-        self.gp = data_row[heading_indices["Contract GP Name"]]
-        self.gp_address = data_row[heading_indices["Contract GP Address"]]
-        self.consent = self.check_consent()
-
-    def check_consent(self):
-        if "No GP" in self.item_details:
-            return False
-        return True
-
-    def entry_summary(self):
-        summary_list = [
-            self.date,
-            self.name,
-            self.address,
-            self.dob,
-            self.ppsn,
-            self.gender,
-            self.item,
-            self.item_details,
-        ]
-        return summary_list
-
-
-def get_outlook():
-    try:
-        outlook = win32.Dispatch("outlook.application")
-        return outlook
-    except:
-        # Exit the program if Outlook is not open
-        print("Error: Outlook is not open - emails cannot be created.")
-        sys.exit(1)
+class FormattedEmail:
+    def __init__(self) -> None:
+        pass
 
 
 def get_data(file: str) -> list:
@@ -147,49 +79,6 @@ def get_heading_indices(row: list) -> dict:
     return heading_indices
 
 
-def create_email(account: object, mail_details: list) -> object:
-    """create an Outlook email object based on mail_details list and save as draft under specified Outlook account
-
-    Args:
-        account (object): specified Outlook account
-        mail_details (list): email details in form [to_address, subject, body_text]
-
-    Returns:
-        object: outlook mail object
-    """
-    outlook = get_outlook()
-    mail = outlook.CreateItem(0)
-    mail.To = mail_details[0]
-    mail.Subject = mail_details[1]
-    mail.HTMLBody = mail_details[2]
-    # set the "send from" account using arcane methods
-    mail._oleobj_.Invoke(*(64209, 0, 8, 0, account))
-    # save a draft
-    mail.Save()
-    # open the email in a popup window (disabled in favour of saving a draft)
-    # mail.Display(False)
-    return mail
-
-
-def select_account(search: str) -> object:
-    """select the account to send the email from
-
-    Args:
-        search (str): desired search term for account name
-
-    Returns:
-        object: outlook account object for the desired account
-    """
-    outlook = get_outlook()
-    accounts = outlook.Session.Accounts
-    for account in accounts:
-        if search in str(account):
-            from_account = account
-            break
-    print("Account selected: {}".format(from_account))
-    return from_account
-
-
 def create_recipient_dict(data: list, email_addresses: dict) -> dict:
     """create our dictionary of recipients based on the data we have. use existing email address data to populate each recipient if available
 
@@ -242,20 +131,14 @@ def compose_email_details(
         address = recipient.address
         email = recipient.email
         print("Composing email for {} ({} patients)".format(name, len(patients)))
-        body = format_body(surname, patients)
+        body = format_body(surname, patients, "email_template.html")
         subject = "Vaccine Report - {}".format(name)
         email_list.append([email, subject, body])
-        print(
-            "To: {}\nSubject: {}\n{}".format(email, subject, body)
-        )  # DEBUG - display email details in terminal
     return email_list
 
 
-def format_body(
-    name: str, patients: list
-) -> str:  # TODO: version to allow for formatting? maybe use a template that we can change out values in
-
-    """composes the message text
+def format_body(name: str, patients: list, template: str) -> str:
+    """composes the message text by filling in the specified html template
 
     Args:
         name (str): recipient name
@@ -265,41 +148,45 @@ def format_body(
         str: text of email body to send
     """
 
-    greeting = "Dear {},\n".format(name)
-    general_body = "For your information, the below patients of yours were recently vaccinated in our pharmacy.\nVaccine details, including batch and expiry, are listed below.\n"
-    patient_details = "{}".format(patients)
-    sign_off = "\nKind regards,\n"
-    body_string = greeting + general_body + patient_details + sign_off
-
-    with open("email_template.html", "r") as f:
+    with open(template, "r") as f:
         html_template = f.read()
     with open("test_email.html", "w") as f:  # TODO: remove debug file creation
         new_html = html_template.format(name, html_table(patients))
         f.write(new_html)
 
-    return body_string
+    return new_html
 
 
 def html_table(data: list) -> str:
-    table = "<table>"
-    for row in data:
-        cells = "</td><td>".join(row)
+    """returns a html table derived from a list of data rows
 
+    Args:
+        data (list): list of rows (each row is in list form) with first row being headings
+
+    Returns:
+        str: html tablified version of input list
+    """
+    table = "<table>"
+    headers = "</th><th>".join(data[0])
+    table += "<tr><th>{}</th></tr>\n".format(headers)
+    for row in data[1:]:
+        cells = "</td><td>".join(row)
         table += "<tr><td>{}</td></tr>\n".format(cells)
 
     table += "</table>"
     return table
 
 
-def email_list_iterate(account: object, email_list: list):
+def email_list_iterate(account_str: str, email_list: list):
     """trigger email creation for each item in our list
 
     Args:
-        account (object): outlook account to use for sending
+        account_str (str): term to search Outlook account for when sending email
         email_list (list): list of individual email details
     """
     for mail_details in email_list:
-        email_object = create_email(account, mail_details)
+        email_object = EmailHandler(account_str)
+        email_object.create_email(mail_details)
 
 
 def main():
@@ -309,12 +196,10 @@ def main():
     email_addresses = get_email_addresses("Healthmail Addresses.csv")
     # generate list of recipients
     recipient_dict = create_recipient_dict(data, email_addresses)
-    # create email details
+    # create email details for all recipients
     email_list = compose_email_details(recipient_dict)
-    # select correct account
-    account = select_account("healthmail")
-    # send emails
-    email_list_iterate(account, email_list)
+    # send all emails from the specified account
+    email_list_iterate("healthmail", email_list)
 
 
 if __name__ == "__main__":

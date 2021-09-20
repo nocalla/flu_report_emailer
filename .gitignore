@@ -9,3 +9,6 @@ Flu Vacc Report.csv
 Healthmail Addresses.csv
 email_template.html
 test_email.html
+__pycache__/EmailHandler.cpython-37.pyc
+__pycache__/PatientEntry.cpython-37.pyc
+__pycache__/Recipient.cpython-37.pyc
