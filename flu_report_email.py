@@ -62,11 +62,22 @@ def get_data(file):
     return data[1:]
 
 
-def process_row(row):  # TODO
+def get_email_addresses(file: str) -> dict:
+    """get a dictionary mapping recipient names to email addresses
+
+    Args:
+        file (str): filename of our CSV file with email addresses
+
+    Returns:
+        dict: dictionary mapping recipient names to email addresses
     """ 
-    ['Date Dispensed', 'Patient Name', 'Street', 'Town or City', 'Birth Date',
-    'PPSN No', 'Gender', 'Qty', 'Script Dispensed As', 'Directions Expanded',
-    'Contract GP Name', 'Contract GP Address']
+    data = dict()
+    with open(file) as f:
+        csv_reader = csv.reader(f, delimiter=",")
+        next(csv_reader)
+        for row in csv_reader:
+            data[row[0]] = row[1]
+    return data
     """
     return row
 
