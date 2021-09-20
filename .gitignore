@@ -1,14 +1,7 @@
 
 Flu Vacc Report.csv
-.idea/.gitignore
-.idea/flu_report_emailer.iml
-.idea/misc.xml
-.idea/modules.xml
-.idea/vcs.xml
-.idea/inspectionProfiles/profiles_settings.xml
+.idea/
 Healthmail Addresses.csv
 email_template.html
 test_email.html
-__pycache__/EmailHandler.cpython-37.pyc
-__pycache__/PatientEntry.cpython-37.pyc
-__pycache__/Recipient.cpython-37.pyc
+__pycache__/

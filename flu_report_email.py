@@ -2,11 +2,7 @@ import csv
 from PatientEntry import PatientEntry
 from Recipient import Recipient
 from EmailHandler import EmailHandler
-
-
-class FormattedEmail:
-    def __init__(self) -> None:
-        pass
+from FormattedBodyText import FormattedBodyText
 
 
 def get_data(file: str) -> list:
@@ -128,53 +124,13 @@ def compose_email_details(
         name = recipient.name
         surname = recipient.surname
         patients = recipient.patients
-        address = recipient.address
         email = recipient.email
         print("Composing email for {} ({} patients)".format(name, len(patients)))
-        body = format_body(surname, patients, "email_template.html")
+        body_object = FormattedBodyText("email_template.html")
+        body = body_object.format_body(surname, patients)
         subject = "Vaccine Report - {}".format(name)
         email_list.append([email, subject, body])
     return email_list
-
-
-def format_body(name: str, patients: list, template: str) -> str:
-    """composes the message text by filling in the specified html template
-
-    Args:
-        name (str): recipient name
-        patients (list): list of individual entries to tabulate
-
-    Returns:
-        str: text of email body to send
-    """
-
-    with open(template, "r") as f:
-        html_template = f.read()
-    with open("test_email.html", "w") as f:  # TODO: remove debug file creation
-        new_html = html_template.format(name, html_table(patients))
-        f.write(new_html)
-
-    return new_html
-
-
-def html_table(data: list) -> str:
-    """returns a html table derived from a list of data rows
-
-    Args:
-        data (list): list of rows (each row is in list form) with first row being headings
-
-    Returns:
-        str: html tablified version of input list
-    """
-    table = "<table>"
-    headers = "</th><th>".join(data[0])
-    table += "<tr><th>{}</th></tr>\n".format(headers)
-    for row in data[1:]:
-        cells = "</td><td>".join(row)
-        table += "<tr><td>{}</td></tr>\n".format(cells)
-
-    table += "</table>"
-    return table
 
 
 def email_list_iterate(account_str: str, email_list: list):

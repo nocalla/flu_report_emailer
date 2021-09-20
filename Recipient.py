@@ -23,3 +23,6 @@ class Recipient:
 
     def generate_patient_summary(self):
         return "\n".join(self.patients)
+
+    def recipient_summary(self):
+        return [self.name, self.surname, self.patients, self.email]
