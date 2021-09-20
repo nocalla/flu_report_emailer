@@ -159,12 +159,16 @@ def create_emails(account, recipient_list):
 def main():
     # find the file with data
     data = get_data("Flu Vacc Report.csv")
+    # get existing email contacts
+    email_addresses = get_email_addresses("Healthmail Addresses.csv")
     # generate list of recipients
-    recipient_list = create_recipient_list(data)
+    recipient_dict = create_recipient_dict(data, email_addresses)
+    # create email details
+    email_list = compose_email_details(recipient_dict)
     # select correct account
-    account = ""  # select_account("healthmail")
-    # create emails
-    create_emails(account, recipient_list)
+    account = select_account("healthmail")
+    # send emails
+    email_list_iterate(account, email_list)
 
 
 if __name__ == "__main__":
